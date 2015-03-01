@@ -2,24 +2,24 @@ package main
 
 import (
 	
-
-	//"fmt"
-	."./driver"
-	//."./network"
+	//"time"
+	"fmt"
+	//."./driver"
+	."./network"
 )
 
 	
 func main(){
-	IO_init()
-	for{
-		currFloor := Elev_get_floor_sensor_signal()
-		if(currFloor==3){
-			Elev_set_motor_direction(-1)
-		}else if(currFloor==0){
-			Elev_set_motor_direction(1)
-		}
-		if(currFloor!=-1){
-			Elev_set_floor_indicator(currFloor)
-		}
+	fmt.Println("Do you want to run elevator 1,2 or 3?")
+	var toRun string
+	fmt.Scanf("%s",&toRun)
+	if(toRun=="1"){
+		RunElev1()
+	}
+	if(toRun=="2"){
+		RunElev2()
+	}
+	if(toRun=="3"){
+		RunElev3()
 	}
 }

@@ -2,7 +2,7 @@
 package network
 
 import (
-//"fmt"
+"fmt"
 "net"
 "time"
 "encoding/json"
@@ -77,14 +77,14 @@ func UDP_broadcast(baddr string, sendCh chan string) (error){
 }
 
 
-/*
-func main() {
+
+func run() {
 	receiveChannel := make(chan Message, 1024)
 	sendChannel := make(chan string, 1024)
 
 	//message := Message{}
 
-	go UDP_broadcast("129.241.187.255:24568", sendChannel)
+	go UDP_broadcast("192.168.1.255:24568", sendChannel)
 	go UDP_receive("24568", receiveChannel)
 	time.Sleep(100*time.Millisecond)
 
@@ -101,4 +101,4 @@ func main() {
 		time.Sleep(100*time.Millisecond)
 	}
 }
-*/
+
