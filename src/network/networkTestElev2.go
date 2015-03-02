@@ -5,6 +5,7 @@ import (
 	"net"
 	//"os"
 	"time"
+	"strings"
 )
 
 
@@ -18,7 +19,7 @@ func RunElev2() {
 	lAddr, err := net.ResolveUDPAddr("udp", listenAddr)
 	CheckError(err)
 	bAddr, err := net.ResolveUDPAddr("udp", broadcastAddr)
-	CheckError(err)
+	CheckError(err,)
 	lConn, err := net.ListenUDP("udp", lAddr)
 	CheckError(err)
 	bConn, err := net.DialUDP("udp", nil, bAddr)
@@ -48,14 +49,21 @@ func ReceiveDataElev2(conn *net.UDPConn) {
 	var msg Message
 	//var err error
 	var b = make([]byte, 1024)
+	time.Sleep(10*time.Second)
+	fmt.Println("Starting elev2!")
 	for {
 			time.Sleep(100 * time.Millisecond)
+			err := conn.SetDeadline(time.Now().Add(30 * time.Second))
+			CheckError(err)
 			n, _, err := conn.ReadFromUDP(b)
-			CheckError(err)
-			err = json.Unmarshal(b[:n], &msg)
-			CheckError(err)
-			fmt.Println("Data Received on Elev2:", msg)
-			//fmt.Println("Received case Client:", msg.Word)
+			if(CheckErrorUDP(err,conn)==false){
+				err = json.Unmarshal(b[:n], &msg)
+				CheckError(err)
+				fmt.Println("Data Received on Elev2:", msg)
+			}else if(strings.Contains(err.Error(),"use of closed network connection")){
+				fmt.Println("stopping function")
+				break	// stop the function
+			}
 		}
 }
 
@@ -67,6 +75,7 @@ func CastDataElev2(conn *net.UDPConn) {
 		//msg.ID = types.CART_ID
 		msg.CurrTime = time.Now()
 		msg.Word = "Message from Elev2!"
+		msg.ID = "elev 2"
 		for i := 0; i < 1; i++ {
 			//fmt.Println("Data casted on Client:", msg)
 			b := make([]byte, 1024)
@@ -74,7 +83,7 @@ func CastDataElev2(conn *net.UDPConn) {
 			CheckError(err)
 			_, err = conn.Write(b)
 			CheckError(err)
-			time.Sleep(15 * time.Second)
+			time.Sleep(5 * time.Second)
 		}
 	}
 }
