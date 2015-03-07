@@ -26,7 +26,7 @@ func RunElev2() {
 	CheckError(err)
 	go CastDataElev2(bConn)
 	go ReceiveDataElev2(lConn)
-	/*
+	
 	broadcastAddr = "192.168.1.255:12013" // connecting to elevator 3
 	//broadcastAddr := "localhost:12000" //localhost
 	listenAddr = ":12015"	// listening to elevator 2
@@ -40,7 +40,6 @@ func RunElev2() {
 	CheckError(err)
 	go CastDataElev2(bConn)
 	go ReceiveDataElev2(lConn)
-	*/
 	fmt.Println("Sockets created successfully Elev 2")
 	<-done
 }
