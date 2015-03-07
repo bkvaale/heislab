@@ -10,16 +10,24 @@ import (
 
 	
 func main(){
-	fmt.Println("Do you want to run elevator 1,2 or 3?")
-	var toRun string
-	fmt.Scanf("%s",&toRun)
-	if(toRun=="1"){
-		RunElev1()
+	fmt.Println("How many elevators?")
+	var numElev int
+	fmt.Scanf("%d",&numElev)
+	var toRun int
+	if(numElev==2){
+		fmt.Println("Do you want to run elevator 1 or 2?")
+		fmt.Scanf("%d",&toRun)
+	}else if(numElev==3){
+		fmt.Println("Do you want to run elevator 1,2 or 3?")
+		fmt.Scanf("%d",&toRun)
 	}
-	if(toRun=="2"){
-		RunElev2()
+	if(toRun==1){
+		RunElev(toRun,numElev)
 	}
-	if(toRun=="3"){
-		RunElev3()
+	if(toRun==2){
+		RunElev(toRun,numElev)
+	}
+	if(toRun==3){
+		RunElev(toRun,numElev)
 	}
 }
