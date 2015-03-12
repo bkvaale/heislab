@@ -7,8 +7,25 @@ import (
 	"time"
 	"strings"
 	"strconv"
+	//."../order"
 )
-
+/*
+var 
+(
+	Global_stopCastDataElev1 bool = false
+	Global_stopCastDataElev2 bool = false
+	Global_stopCastDataElev3 bool = false
+)*/
+// data that is sent between elevators
+type Data struct {
+	OrderQueue[4][3] int
+	ID string
+	Word string
+	CurrTime time.Time
+	LocalIP string
+	RemoteIP string
+	RawWord string
+}
 
 // elev 1 uses ports :12010 and :12011, elev 2 :12012 and :12013, elev 3 :12014 and :12015
 func RunElev(elev int,numElev int) {
@@ -53,7 +70,7 @@ func RunElev(elev int,numElev int) {
 		CheckError(err)
 		bConn, err := net.DialUDP("udp", nil, bAddr)
 		CheckError(err)
-		go CastData(bConn,elev)
+		go SendData(bConn,elev)
 		go ReceiveData(lConn,elev)
 	}
 	fmt.Println("Sockets created successfully Elev 1")
@@ -101,7 +118,7 @@ func CheckErrorUDP(err error, conn *net.UDPConn) bool {
 }
 
 func ReceiveData(conn *net.UDPConn, elev int) {
-	var msg Message
+	var data Data
 	//var err error
 	var b = make([]byte, 1024)
 	time.Sleep(10*time.Second)
@@ -114,29 +131,47 @@ func ReceiveData(conn *net.UDPConn, elev int) {
 			CheckError(err)
 			n, _, err := conn.ReadFromUDP(b)
 			if(CheckErrorUDP(err,conn)==false){
-				err = json.Unmarshal(b[:n], &msg)
+				err = json.Unmarshal(b[:n], &data)
 				CheckError(err)
-				fmt.Println("Data Received on Elev", elev, msg)
+				fmt.Println("Data Received on Elev", elev, data)
 			}else if(strings.Contains(err.Error(),"use of closed network connection")){
-				fmt.Println("stopping function")
+				fmt.Println("stopping receiveData function")
+				/*switch elev{
+					case 1:
+						Global_stopCastDataElev1 = true
+						break
+					case 2:
+						Global_stopCastDataElev2 = true
+						break
+					case 3:
+						Global_stopCastDataElev3 = true
+						break
+				}*/
 				break	// stop the function
 			}
 		}
 }
 
-func CastData(conn *net.UDPConn, elev int) {
-	var msg Message
+func SendData(conn *net.UDPConn, elev int) {
+	var data Data
 	var err error
 	for {
+/*
+		if((elev==1 && Global_stopCastDataElev1==true)||(elev==2 && Global_stopCastDataElev2==true)||(elev==3 && Global_stopCastDataElev3==true)){
+			fmt.Println("Stopping CastData function")
+			break		
+		}
+*/
 		//msg = <-OutputCh
 		//msg.ID = types.CART_ID
-		msg.CurrTime = time.Now()
-		msg.Word = "Message from Elev"+strconv.Itoa(elev)
-		msg.ID = "elev"
+		data.CurrTime = time.Now()
+		data.Word = "Message from Elev"+strconv.Itoa(elev)
+		data.ID = "elev"
+		//data.OrderQueue
 		for i := 0; i < 1; i++ {
 			//fmt.Println("Data casted on Server:", msg)
 			b := make([]byte, 1024)
-			b, err = json.Marshal(msg)
+			b, err = json.Marshal(data)
 			CheckError(err)
 			_, err = conn.Write(b)
 			CheckError(err)
