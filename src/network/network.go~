@@ -67,8 +67,8 @@ func Run(){
 		go sendPacket(broadcastConnection)
 		go updatePeerMap(PeerMap) // ???
 		go elevatorIsAlive() // ???
+		<-done
 	}
-	<-done
 }
 /*-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------*/
 func checkError(err error) {

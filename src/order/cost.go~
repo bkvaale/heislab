@@ -56,7 +56,7 @@ func CalculateCost(order []int) int{
 	punishFloorDifferenceMultiplier := 4 
 
 	//direction := GetOrderDirection()	can be included in switch statement
-	currentFloor := driver.ElevGetFloorSensorSignal() 
+	currentFloor := GetCurrentFloor()
 	
 	
 

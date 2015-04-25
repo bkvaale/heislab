@@ -167,7 +167,7 @@ func DistributeExternalOrder() { //ANOTHER NAME IF POSSIBLE
 						counter = counter + 1
 						elevatorCostMap[elevator.ID] = elevator.Cost
 						fmt.Println("Penalty map cost: ", elevatorCostMap[elevator.ID], " for internal elev: ", elevator.ID)
-						if(counter == dataTypes.NumberOfElevatorsConnected){
+						if counter == dataTypes.NumberOfElevatorsConnected{
 							break Tag
 						}
 					case elevator:=<-network.CostOfOrderOverNetworkCh:
@@ -195,7 +195,7 @@ func DistributeExternalOrder() { //ANOTHER NAME IF POSSIBLE
 				}
 			}
 
-		if(counter <= dataTypes.NumberOfElevatorsConnected && counter > 1){ //DENNE VAR IKKE HER::::::::::::::::::::
+		if counter <= dataTypes.NumberOfElevatorsConnected{
 			for elevatorID := 1; elevatorID <= len(elevatorCostMap); elevatorID++ {
 				if elevatorCostMap[elevatorID] < lowestCost {
 					receiverID = elevatorID
