@@ -1,0 +1,7 @@
+Changes to dataTypes.go
+
+Changed Data struct to Message
+Changed NewGlobalQueue() to NewExternalQueue
+changed CART_ID to ELEV_ID
+changed NUMBER_OF_CARTS to NUMBER_OF_ELEVS
+changed PeerMap to PeerStruct

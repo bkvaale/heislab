@@ -1,0 +1,233 @@
+package order
+
+import (
+	"../network"
+	"../driver"
+	"../dataTypes"
+	"fmt"
+	"math"
+	"time"
+)
+
+// will change this with our function when we test on 3 elevators
+
+func CalculateCost(order []int) int {
+	cost := 0
+	var state int
+	var motorDir int
+	elevatorDir := GetOrderDirection()
+	elevatorCurrentFloor := GetCurrentFloor()
+	orderFloor := order[0]
+	orderDir := order[1]
+	wdp := 2 //wrong direction punishment
+	rdr := 2 //right direction reward
+	wfm := 4 //wrong floor multiplier.
+	floorDiff := wfm * (int(math.Abs(float64(elevatorCurrentFloor - orderFloor))))
+
+	if driver.ElevGetFloorSensorSignal() == -1 {
+		motorDir = driver.IoReadBit(driver.MOTORDIR)
+		if motorDir == 1 {
+			state = UP
+		} else if motorDir == 0 {
+			state = DOWN
+		}
+	}
+
+	switch state {
+	case UP:
+		switch elevatorDir {
+		case UP:
+			if orderDir == DOWN {
+				cost = cost + wdp
+			} else if orderDir == UP {
+				cost = cost - rdr
+			}
+			cost = floorDiff + cost
+			break
+		case DOWN:
+			if orderDir == UP {
+				cost = cost + wdp
+			}
+			cost = floorDiff + cost
+			break
+		}
+		break
+
+	case DOWN:
+		switch elevatorDir {
+		case UP:
+			if orderDir == DOWN {
+				cost = cost + wdp
+			}
+			cost = floorDiff + cost
+			break
+		case DOWN:
+			if orderDir == UP {
+				cost = cost + wdp
+			} else if orderDir == DOWN {
+				cost = cost - rdr
+			}
+			cost = floorDiff + cost
+			break
+
+		default:
+			switch elevatorDir {
+			case UP:
+				if orderDir == DOWN {
+					cost = cost + wdp
+				}
+				cost = floorDiff + cost
+				break
+			case DOWN:
+				if orderDir == UP {
+					cost = cost + wdp
+				}
+				cost = floorDiff + cost
+				break
+			}
+			break
+		}
+	}
+	if cost < 0 {
+		return 0
+	}
+	fmt.Println("KOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOST er :", cost)
+	return cost
+}
+
+func HandleCost() {
+	var cost int
+	order := make([]int, 2)
+	for {
+		order = <-network.OrderCh
+		cost = CalculateCost(order)
+		fmt.Println("Cost calculated and sent. cost:", cost)
+		network.OutputCh <- dataTypes.Message{Head: "cost", Order: order, Cost: cost}
+	}
+}
+
+func DistributeExternalOrder(ExternalQueue dataTypes.Matrix) {
+	
+	var bidder dataTypes.Message
+	var numberOfBiddingElevators int
+	var winner int
+	var lowestCost int
+
+	var currentOrder = make([]int, 2)
+	//currentOrder[0], currentOrder[1] = -1, -1
+	var bidderMap = make(map[int]int)
+
+
+	for {
+		time.Sleep(50 * time.Millisecond)
+		for elevator := range network.PeerMap.M {
+			bidderMap[elevator] = -1 		//Sets all values to -1 which is undefined
+		}
+		
+		//Wait here until we get an order, sets the data from the channel on the bidding elevator
+		bidder = <-network.DistributeExternalOrderCh
+		bidderMap[bidder.ID] = bidder.Cost			
+
+		// Sets the order the other elevators are going to bid at
+		currentOrder[0] = bidder.Order[0]
+		currentOrder[1] = bidder.Order[1]
+
+		//The bidding has to be less than
+		lowestCost = 100 
+		
+		//Number of elevators
+		numberOfBiddingElevators = len(network.PeerMap.M)
+		fmt.Println("numberOfBiddingElevators er:", numberOfBiddingElevators)
+		
+		//Their bid
+		for i:=1; i<numberOfBiddingElevators; i++ {
+			bidder = <-network.DistributeExternalOrderCh
+			bidderMap[bidder.ID] = bidder.Cost			
+		}
+
+		/* SLETTES
+
+
+
+		bidder = <-network.DistributeExternalOrderCh
+		bidderMap[bidder.ID] = bidder.Cost		//Uses the elevator_ID as element and the cost is the value on that spot 
+		
+
+		numberOfBiddingElevators = len(network.PeerMap.M)
+		if currentOrder[0] == -1 {
+			copy(currentOrder, bidder.Order)
+		}
+		fmt.Println("numberOfBiddingElevators er:", numberOfBiddingElevators)
+
+		switch numberOfBiddingElevators {		// Evaluates the cost for the remaining elevators (bidders) 
+		case 1:
+			break
+
+		case 2:
+			bidder = <-network.DistributeExternalOrderCh
+			if bidder.Order[0] == currentOrder[0] && bidder.Order[1] == currentOrder[1] {
+				bidderMap[bidder.ID] = bidder.Cost
+			}
+			break
+
+		case 3:
+			bidder = <-network.DistributeExternalOrderCh
+			if bidder.Order[0] == currentOrder[0] && bidder.Order[1] == currentOrder[1] {
+				bidderMap[bidder.ID] = bidder.Cost
+			}
+			bidder = <-network.DistributeExternalOrderCh
+			if bidder.Order[0] == currentOrder[0] && bidder.Order[1] == currentOrder[1] {
+				bidderMap[bidder.ID] = bidder.Cost
+			}
+			break
+		}*/
+
+		fmt.Println("lengden av auction map er:", len(bidderMap))
+		for elevator := 1; elevator <= len(bidderMap); elevator++ {
+			fmt.Println("hahahahahahhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh")
+			fmt.Println("bidderMap[2]", bidderMap[2])
+			fmt.Println("bidderMap[1]", bidderMap[1])
+			time.Sleep(5 * time.Millisecond)
+			fmt.Println("bidderMap[elevator]", bidderMap[elevator])
+			fmt.Println("lowest cost er", lowestCost)
+			if bidderMap[elevator] < lowestCost {
+				fmt.Println("heeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee")
+				fmt.Println("elevator:", elevator)
+				winner = elevator
+				fmt.Println("winner", winner)
+				lowestCost = bidderMap[elevator]
+				fmt.Println("Winner ", winner)
+			}
+		}
+
+		for elevator := range bidderMap {
+			delete(bidderMap, elevator)
+		}
+		if winner == dataTypes.ELEV_ID {
+			Claim(bidder.Order, winner)
+		}
+		fmt.Println("Winner for order", bidder.Order, ": ", winner)
+		winner = 0
+	}
+}
+
+func Claim(order []int, winner int) {
+	floor, dir := order[0], order[1]
+	data := dataTypes.Message{Head: "addorder"}
+	if ExternalQueue[floor][dir] == 0 {
+		fmt.Println("order has been claimed. order:", order)
+		data.Order = order
+		data.WinnerId = winner
+		fmt.Println("Vinnerennnnnnnnnnnnnnnnnnnnnnnnnn er:", winner)
+		network.OutputCh <- data
+	}
+}
+
+func ContainsAll(carts []int) bool {
+	for _, t := range carts {
+		if t == 0 {
+			return false
+		}
+	}
+	return true
+}

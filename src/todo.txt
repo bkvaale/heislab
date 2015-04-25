@@ -1,0 +1,24 @@
+Problemer med...
+
+CheckButtonPressedAndDistributeExternalOrder() faar alltid have not received message from all connected elevators, skyldes time delay eller 
+vi kan prove aa endre tiden man maa vente aa faa svar, kan ogsaa lege til flere print i de ulike casene i networkReceive for aa se om vi
+sender paa riktig maate. Vi har bare endret paa buttonCallUp, maa ogsaa lage helperfunksjon for aa faa mindre kode.
+
+
+
+
+
+
+NAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAaa
+
+CHECK LAB CRITERIA BEFORE STARTING!!!!
+
+Get 3 elevators to run
+
+Change direction at top and buttom floor(SHOULD BE EASY), se Safety() in elevator.go
+
+Program should be able to disconnect elevators(s) from the network FOR SOME TIME and then back on. This means that CheckAndDistributeExternalOrder must be changed. For now it gives the orders to the 
+panel-elevator from which the order came from, if any disconnects from the network. 
+
+
+

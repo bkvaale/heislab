@@ -1,0 +1,373 @@
+package network
+
+import (
+	"../dataTypes"
+	//"../order"	// should change this...
+	"encoding/json"
+	"fmt"
+	"net"
+	"os"
+	"time"
+	"strings"
+	"strconv"
+)
+
+var (
+	PeerMap = NewPeerMap()
+
+	// Global channels
+	UDPCh            		= make(chan dataTypes.Message)
+	OrderCh            		= make(chan []int)
+	TableCh            		= make(chan dataTypes.Matrix)
+	DistributeExternalOrderCh       = make(chan dataTypes.Message)
+	AddOrderCh          		= make(chan dataTypes.Message)
+	RemoveOrderCh       		= make(chan []int)
+	UpdateGlobalTableCh 		= make(chan dataTypes.Matrix)
+	
+	CostOfOrderOverNetworkCh	= make(chan dataTypes.Message)
+	CalculateCostNetworkCh		= make(chan dataTypes.Message)
+
+	CalculateCostCh			= make(chan dataTypes.Message) //NY // REGNE cost
+	CostToGetOrderCh		= make(chan dataTypes.Message) //NY //BRUKES TIL Å SENDETILBAKE RES
+
+	// Local channels
+	peerCh = make(chan int)
+)
+/*
+func Run(){	Old run, was hardcoded!!!
+	fmt.Println("How many elevators?")
+	fmt.Scanf("%d",&dataTypes.NumberOfElevatorsConnected)
+
+	if(dataTypes.NumberOfElevatorsConnected==1){
+		RunElev(1)
+
+	}else if(dataTypes.NumberOfElevatorsConnected==2){
+		fmt.Println("Do you want to run elevator 1 or 2?")
+		fmt.Scanf("%d",&dataTypes.ElevatorID)
+
+	}else if(dataTypes.NumberOfElevatorsConnected==3){
+		fmt.Println("Do you want to run elevator 1,2 or 3?")
+		fmt.Scanf("%d",&dataTypes.ElevatorID)
+	}
+
+	if(dataTypes.ElevatorID==1){
+		RunElev(dataTypes.ElevatorID)
+	}
+	if(dataTypes.ElevatorID==2){
+		RunElev(dataTypes.ElevatorID)
+	}
+	if(dataTypes.ElevatorID==3){
+		RunElev(dataTypes.ElevatorID)
+	}	
+}
+*/
+func Run(){
+	fmt.Println("How many elevators?")
+	fmt.Scanf("%d",&dataTypes.NumberOfElevatorsConnected)
+
+	if(dataTypes.NumberOfElevatorsConnected==1){
+		RunElev(1)
+
+	}else if(dataTypes.NumberOfElevatorsConnected>1){
+		fmt.Print("Which elevator do you want to run? Choose whole number between 1-",dataTypes.NumberOfElevatorsConnected, ":")
+		fmt.Scanf("%d",&dataTypes.ElevatorID)
+		RunElev(dataTypes.ElevatorID)	
+	}
+}
+/* Old RunElev was hardcoded!!!
+func RunElev(elev int){
+	fmt.Println("Starting server!")
+	done := make(chan bool)
+
+	port := 0
+	switch elev{
+	case 1:
+		port = 12010
+		break
+	case 2:
+		port = 12012
+		break
+	case 3:
+		port = 12014
+		break
+	}
+
+
+	for i:=0; i<dataTypes.NumberOfElevatorsConnected-1; i++{
+		port+=i
+		portString := strconv.Itoa(port)
+		broadcastAddr := "129.241.187.255:"+portString
+
+		listenAddr:=""
+		if(i==0 && elev==1){
+			listenAddr = ":12012"
+		}else if(i==1 && elev==1){
+			listenAddr = ":12014"
+		}else if(i==0 && elev==2){
+			listenAddr = ":12010"
+		}else if(i==1 && elev==2){
+			listenAddr = ":12015"
+		}else if(i==0 && elev==3){
+			listenAddr = ":12011"
+		}else if(i==1 && elev==3){
+			listenAddr = ":12013"
+		}
+
+		if(dataTypes.NumberOfElevatorsConnected==1){
+		RunElev(1)
+		}
+
+		lAddr, err := net.ResolveUDPAddr("udp", listenAddr)
+		CheckError(err)
+		bAddr, err := net.ResolveUDPAddr("udp", broadcastAddr)
+		CheckError(err)
+
+		lConn, err := net.ListenUDP("udp", lAddr)
+		CheckError(err)
+		bConn, err := net.DialUDP("udp", nil, bAddr)
+		CheckError(err)
+
+		fmt.Println("Sockets created successfully")
+
+		go SendData(bConn,elev)	// CastData
+		go ReceiveData(lConn, elev)
+		go UpdatePeerMap(PeerMap) // ???
+		go Ping() // ???
+	}
+	<-done
+}
+*/
+
+func RunElev(elev int){
+	//fmt.Println("Starting server!")
+	done := make(chan bool)
+
+	port := 12009+elev
+	switch elev{
+	case 1:
+		port = 12010
+		break
+	case 2:
+		port = 12012
+		break
+	case 3:
+		port = 12014
+		break
+	}
+
+
+	for i:=0; i<dataTypes.NumberOfElevatorsConnected-1; i++{
+		port+=i
+		portString := strconv.Itoa(port)
+		broadcastAddr := "129.241.187.255:"+portString
+
+		listenAddr:=""
+		if(i==0 && elev==1){
+			listenAddr = ":12012"
+		}else if(i==1 && elev==1){
+			listenAddr = ":12014"
+		}else if(i==0 && elev==2){
+			listenAddr = ":12010"
+		}else if(i==1 && elev==2){
+			listenAddr = ":12015"
+		}else if(i==0 && elev==3){
+			listenAddr = ":12011"
+		}else if(i==1 && elev==3){
+			listenAddr = ":12013"
+		}
+
+		if(dataTypes.NumberOfElevatorsConnected==1){
+		RunElev(1)
+		}
+
+		lAddr, err := net.ResolveUDPAddr("udp", listenAddr)
+		CheckError(err)
+		bAddr, err := net.ResolveUDPAddr("udp", broadcastAddr)
+		CheckError(err)
+
+		lConn, err := net.ListenUDP("udp", lAddr)
+		CheckError(err)
+		bConn, err := net.DialUDP("udp", nil, bAddr)
+		CheckError(err)
+
+		fmt.Println("Sockets created successfully")
+
+		go SendData(bConn,elev)	// CastData
+		go ReceiveData(lConn, elev)
+		go UpdatePeerMap(PeerMap) // ???
+		go Ping() // ???
+	}
+	<-done
+}
+
+func CheckError(err error) {
+	if err != nil {
+		if(strings.Contains(err.Error(),"use of closed network connection")){
+			fmt.Println("closed network connection error found!")	
+		}else{
+			fmt.Println("Fatal error ", err.Error())
+			os.Exit(1)
+		}
+	}
+}
+
+func NewPeerMap() *dataTypes.PeerMap {
+	return &dataTypes.PeerMap{M: make(map[int]time.Time)}
+}
+
+func CheckPeerLife(p dataTypes.PeerMap, id int) bool {
+	_, present := p.M[id]
+	if present {
+		tdiff := time.Since(p.M[id])
+		return tdiff <= dataTypes.TIMEOUT
+	}
+	return false
+}
+
+func UpdatePeerMap(p *dataTypes.PeerMap) {
+	var id int
+	for {
+		time.Sleep(100 * time.Millisecond)
+		id = <-peerCh
+		p.M[id] = time.Now()
+		//fmt.Println("Updated peerMap: ", PeerMap)
+	}
+
+}
+
+func ReceiveData(conn *net.UDPConn, elev int) {
+	var receivedMessage dataTypes.Message
+	//var data Data
+	//var err error
+	var buffer = make([]byte, 1024)
+	time.Sleep(3*time.Second) // var 10 sek
+	fmt.Println("Starting elev" , elev)
+	for {
+		//Deadline
+		time.Sleep(100 * time.Millisecond)
+		err := conn.SetDeadline( time.Now().Add(10 * time.Second) )
+		CheckError(err)
+		n, _, err := conn.ReadFromUDP(buffer)
+		if( !CheckErrorUDP(err, conn) ){
+			err = json.Unmarshal(buffer[:n], &receivedMessage)
+		
+			CheckError(err)
+			//fmt.Println("Data Received:", receivedMessage)
+			
+		}else if (strings.Contains(err.Error(),"use of closed network connection")){
+				fmt.Println("stopping receiveData function")
+				break
+		}
+
+		if receivedMessage.ID > 0 {
+			// update peermap
+			peerCh <- receivedMessage.ID
+		}
+
+		//fmt.Println("Received case:", receivedMessage.Head)
+		switch receivedMessage.Head {
+
+		case "order":
+			OrderCh <- receivedMessage.Order
+			fmt.Println("Order received:", receivedMessage.Order)
+			fmt.Println("")
+			break
+		case "table":
+			fmt.Println("Table received", receivedMessage.Table)
+			break
+		case "CalculateCostforNewExternalOrder":
+			//fmt.Println("We entered CalculateCostForNewExternalOrder-Case")
+			//fmt.Println("Elevator",receivedMessage.ID," With order ",receivedMessage.Order)
+			CalculateCostNetworkCh <- receivedMessage
+			//fmt.Println("Order sent to CalculateCostNetworkCh")
+			break
+		case "costCalculatedNetwork":
+			CostOfOrderOverNetworkCh <- receivedMessage
+			//fmt.Println("Cost calculated: ", receivedMessage.Cost, " and delivered by elevator: ", receivedMessage.ID)
+			break
+		case "addorder":
+			AddOrderCh <- receivedMessage
+			
+			fmt.Println("Order added:", receivedMessage.Order, " received by: ", receivedMessage.ID)
+			//fmt.Println("")
+			break
+		case "removeOrder":
+			RemoveOrderCh <- receivedMessage.Order
+			fmt.Println("Order removed:", receivedMessage.Order)
+			//fmt.Println("")
+			break
+		default:
+
+			fmt.Println("Default case entered") 
+			break
+		}
+	}
+}
+
+func SendData(conn *net.UDPConn, elev int) {
+	var data dataTypes.Message
+	//var data Data
+	var err error
+	for {
+		data = <-UDPCh
+		//data.ID = dataTypes.ElevatorID
+		data.Word = "Message from Elev"+strconv.Itoa(elev)
+		data.T = time.Now()
+		//data.CurrTime = time.Now()
+		//data.Word = "Message from Elev"+strconv.Itoa(elev)
+		//data.ID = "elev"
+		//fmt.Println("Message sent!")
+		for i := 0; i < 1; i++ {
+			//fmt.Println("Data casted:", data)
+			b := make([]byte, 1024)
+			b, err = json.Marshal(data)
+			CheckError(err)
+			_, err = conn.Write(b)
+			CheckError(err)
+			time.Sleep(1 * time.Millisecond)
+			//time.Sleep(5 * time.Second)
+		}
+	}
+}
+
+
+func CheckErrorUDP(err error, conn *net.UDPConn) bool {
+	if err != nil {
+		if(strings.Contains(err.Error(),"i/o timeout")){
+			fmt.Println("IO Timeout: " ,err.Error())
+			switch{
+			case strings.Contains(err.Error(),":12010")||strings.Contains(err.Error(),":12011"):
+				fmt.Println("problem with elev1: closing connection")
+				conn.Close()
+				return true
+			case strings.Contains(err.Error(),":12012")||strings.Contains(err.Error(),":12013"):
+				fmt.Println("problem with elev2: closing connection")
+				conn.Close()
+				return true
+			case strings.Contains(err.Error(),":12014")||strings.Contains(err.Error(),":12015"):
+				fmt.Println("problem with elev3: closing connection")
+				conn.Close()
+				return true
+			}
+		}else if(strings.Contains(err.Error(),"use of closed network connection")){
+				fmt.Println("UDP connection closed error!")
+				return true
+		}else{
+			fmt.Println("Fatal error ", err.Error())
+			os.Exit(1)
+			return true
+		}
+	}
+	return false
+}
+
+
+
+
+
+func Ping() {
+	for {
+		UDPCh <- dataTypes.Message{ID: dataTypes.ElevatorID}
+		time.Sleep(1 * time.Second)
+	}
+}
